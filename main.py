@@ -23,9 +23,7 @@ def main():
             print("Cerrando. Necesitas el entorno para continuar.")
             return
 
-    # Iniciar el bot (asumiendo que el archivo principal es index.py o similar)
-    # Cambia 'index.py' por el nombre real de tu script de bot
-    bot_file = "index.py" 
+    bot_file = "bot.py" 
     if os.path.exists(bot_file):
         print(f"Lanzando {bot_file}...")
         run_command(f"{python_venv} {bot_file}")
