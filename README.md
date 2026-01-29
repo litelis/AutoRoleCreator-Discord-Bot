@@ -1,18 +1,21 @@
-# AutoRoleCreator Discord Bot
+# 🤖 AutoRoleCreator Discord Bot
 
-Bot de Discord diseñado para crear roles automáticamente en canales específicos o en todos los canales del servidor, con opciones flexibles para roles únicos o por canal.
+¡Crea roles de forma masiva y automática! Este bot elimina la tarea tediosa de configurar roles uno por uno en tu servidor de Discord. Perfecto para servidores de comunidad o gaming que necesitan una jerarquía organizada rápido.
 
-## Características
+---
 
-- Crear roles en un canal, varios canales o todos los canales automáticamente.
-- Opción de rol único para todos los canales o un rol individual por cada canal.
-- Generación automática de nombres si se deja en blanco.
-- Actualizador automático desde GitHub.
+## 🔥 Características
+* **Multiplataforma:** Funciona en Windows, Linux y Android (Termux).
+* **Instalación Inteligente:** Detecta tu sistema y configura el entorno solo.
+* **Eficiente:** Crea múltiples roles con un solo comando.
+* **Seguro:** Usa variables de entorno para proteger tu Token.
 
-## Instalación
+---
 
-1. Clona este repositorio:
+## 🛠️ Instalación
 
+### 1. Preparación
+Primero, clona este repositorio en tu máquina:
 ```bash
-git clone https://github.com/litelis/AutoRoleCreator-Discord-Bot.git
+git clone [https://github.com/litelis/AutoRoleCreator-Discord-Bot](https://github.com/litelis/AutoRoleCreator-Discord-Bot)
 cd AutoRoleCreator-Discord-Bot
