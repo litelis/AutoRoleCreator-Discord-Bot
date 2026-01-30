@@ -28,7 +28,7 @@ def update():
                 print(f"Nueva actualización detectada (Commit: {remote_sha[:7]})")
                 print("Actualizando código...")
                 # Ejecuta la actualización real
-                run_command("git pull origin main")
+                run_command("git pull origin main --allow-unrelated-histories")
                 run_command("pip install -r requirements.txt")
                 print("Bot actualizado con éxito.")
             else:
