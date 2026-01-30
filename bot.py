@@ -14,7 +14,7 @@ if not TOKEN:
 
 intents = discord.Intents.default()
 intents.guilds = True
-intents.members = True
+# intents.members = True # Desactivado: Requiere 'Server Members Intent' en el Developer Portal
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -122,7 +122,10 @@ class RolCog(commands.Cog):
         except Exception as e:
              await interaction.followup.send(f"Ocurrió un error al crear los roles: {str(e)}")
 
-bot.add_cog(RolCog(bot))
+async def setup_hook():
+    await bot.add_cog(RolCog(bot))
+
+bot.setup_hook = setup_hook
 
 if __name__ == "__main__":
     bot.run(TOKEN)
