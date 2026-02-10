@@ -18,7 +18,19 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+@bot.event
+async def on_ready():
+    print(f'Bot conectado como {bot.user}')
+    print(f'ID del bot: {bot.user.id}')
+    try:
+        # Sincronizar comandos slash con Discord
+        synced = await bot.tree.sync()
+        print(f'Sincronizados {len(synced)} comandos slash')
+    except Exception as e:
+        print(f'Error al sincronizar comandos: {e}')
+
 class RolCog(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -42,15 +54,42 @@ class RolCog(commands.Cog):
         ]
     )
     async def rol(
-        self, interaction: discord.Interaction,
-        alcance_canales: app_commands.Choice[str], # Required argument first (conceptually, though discord.py handles keywargs)
-        rol_por_canal: app_commands.Choice[str], # Required
+        self, 
+        interaction: discord.Interaction,
+        alcance_canales: app_commands.Choice[str],
+        rol_por_canal: app_commands.Choice[str],
         nombre_rol: str = None,
         canal_target: discord.TextChannel = None,
         canales: str = None
     ):
+        # Verificar que no se esté usando en DM
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "Este comando solo puede usarse en servidores, no en mensajes directos.",
+                ephemeral=True
+            )
+            return
+
         guild = interaction.guild
+        
+        # Verificar permisos del bot
+        bot_member = guild.me
+        if not bot_member.guild_permissions.manage_roles:
+            await interaction.response.send_message(
+                "❌ No tengo permiso para gestionar roles. Por favor, dame el permiso 'Gestionar Roles'.",
+                ephemeral=True
+            )
+            return
+        
+        if not bot_member.guild_permissions.manage_channels:
+            await interaction.response.send_message(
+                "❌ No tengo permiso para gestionar canales. Por favor, dame el permiso 'Gestionar Canales'.",
+                ephemeral=True
+            )
+            return
+
         created_roles = []
+
 
         # Determinar canales
         target_channels = []
@@ -73,16 +112,24 @@ class RolCog(commands.Cog):
                         target_channels = [channel]
             
             if not target_channels:
-                await interaction.response.send_message("Para 'Un canal', debes seleccionar un canal en `canal_target` o mencionarlo en `canales`.", ephemeral=True)
+                await interaction.response.send_message(
+                    "Para 'Un canal', debes seleccionar un canal en `canal_target` o mencionarlo en `canales`.",
+                    ephemeral=True
+                )
                 return
+
             
             if not nombre_rol:
                 nombre_rol = f"rol-{random.randint(1000,9999)}"
 
         elif alcance_canales.value == "varios_canales":
             if not canales:
-                await interaction.response.send_message("Para 'Varios canales', debes escribir las menciones en `canales` (ej: #general #chat).", ephemeral=True)
+                await interaction.response.send_message(
+                    "Para 'Varios canales', debes escribir las menciones en `canales` (ej: #general #chat).",
+                    ephemeral=True
+                )
                 return
+
             # Parse channel mentions
             channel_ids = re.findall(r'<#(\d+)>', canales)
             target_channels = []
@@ -97,8 +144,12 @@ class RolCog(commands.Cog):
                  target_channels.append(canal_target)
 
             if not target_channels:
-                await interaction.response.send_message("No se encontraron canales válidos en las menciones.", ephemeral=True)
+                await interaction.response.send_message(
+                    "No se encontraron canales válidos en las menciones.",
+                    ephemeral=True
+                )
                 return
+
             if not nombre_rol:
                 nombre_rol = f"rol-{random.randint(1000,9999)}"
 
@@ -107,20 +158,63 @@ class RolCog(commands.Cog):
 
         try:
             if rol_por_canal.value == "unico":
+                # Verificar que el rol no exista ya
+                existing_role = discord.utils.get(guild.roles, name=nombre_rol)
+                if existing_role:
+                    await interaction.followup.send(
+                        f"⚠️ El rol '{nombre_rol}' ya existe. Usa otro nombre.",
+                        ephemeral=True
+                    )
+                    return
+                
                 role = await guild.create_role(name=nombre_rol)
                 created_roles.append(role)
                 for channel in target_channels:
                     await channel.set_permissions(role, read_messages=True, send_messages=True)
+                    
             elif rol_por_canal.value == "por_canal":
                 for channel in target_channels:
-                    role_name = f"{nombre_rol}-{channel.name}" if rol_por_canal.value == "por_canal" else nombre_rol
+                    role_name = f"{nombre_rol}-{channel.name}"
+                    # Verificar que el rol no exista ya
+                    existing_role = discord.utils.get(guild.roles, name=role_name)
+                    if existing_role:
+                        await interaction.followup.send(
+                            f"⚠️ El rol '{role_name}' ya existe. Omite este canal o usa otro nombre base.",
+                            ephemeral=True
+                        )
+                        continue
+                    
                     role = await guild.create_role(name=role_name)
                     created_roles.append(role)
                     await channel.set_permissions(role, read_messages=True, send_messages=True)
             
-            await interaction.followup.send(f"Roles creados con éxito: {', '.join(r.name for r in created_roles)}")
+            if created_roles:
+                await interaction.followup.send(
+                    f"✅ Roles creados con éxito: {', '.join(r.name for r in created_roles)}"
+                )
+            else:
+                await interaction.followup.send(
+                    "⚠️ No se crearon roles. Es posible que ya existieran.",
+                    ephemeral=True
+                )
+                    
+        except discord.Forbidden:
+            await interaction.followup.send(
+                "❌ No tengo permisos suficientes para crear roles o modificar canales. "
+                "Asegúrate de que mi rol esté por encima de los roles que intento crear.",
+                ephemeral=True
+            )
+        except discord.HTTPException as e:
+            await interaction.followup.send(
+                f"❌ Error de Discord al crear roles: {e.text}",
+                ephemeral=True
+            )
         except Exception as e:
-             await interaction.followup.send(f"Ocurrió un error al crear los roles: {str(e)}")
+             await interaction.followup.send(
+                 f"❌ Ocurrió un error inesperado: {str(e)}",
+                 ephemeral=True
+             )
+
 
 async def setup_hook():
     await bot.add_cog(RolCog(bot))
